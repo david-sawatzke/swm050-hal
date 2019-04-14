@@ -4,6 +4,10 @@ A hal for swm050 chips. Large portions
 of this hal are based on the
 [_stm32f0xx-hal_](https://github.com/stm32-rs/stm32f0xx-hal) hal.
 
+## About
+This is a *very* basic mcu. It has gpio and two timers. That's it.
+It doesn't even implement the SysTick timer.
+
 ## Flashing
 
 I use the branch from
