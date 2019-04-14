@@ -1,0 +1,32 @@
+[package]
+name = "swm050-hal"
+version = "0.1.0"
+authors = ["David Sawatzke <david-sawatzke@users.noreply.github.com>"]
+edition = "2018"
+
+[dependencies]
+swm050 = { path = "../swm050" }
+bare-metal = { version = "0.2.4", features = ["const-fn"] }
+cortex-m = "0.6"
+cortex-m-rt = "0.6.7"
+nb = "0.1.1"
+void = { version = "1.0.2", default-features = false }
+cast = { version = "0.2.2", default-features = false }
+
+[dependencies.embedded-hal]
+features = ["unproven"]
+version = "0.2.2"
+
+[dev-dependencies]
+panic-halt = "0.2.0"
+
+[features]
+rt = ["swm050/rt"]
+
+[profile.dev]
+debug = true
+
+[profile.release]
+debug = true
+lto = true
+opt-level = "s"
