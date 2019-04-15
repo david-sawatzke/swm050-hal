@@ -10,7 +10,7 @@ use cast::{u16, u32};
 use core::ops::Deref;
 
 use crate::syscon::{ClockEnable, Syscon};
-use crate::timer::TimerRegisterBlock;
+use crate::timers::TimerRegisterBlock;
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 
 #[derive(Clone, Copy)]

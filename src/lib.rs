@@ -8,4 +8,4 @@ pub mod gpio;
 pub mod prelude;
 pub mod syscon;
 pub mod time;
-pub mod timer;
+pub mod timers;
