@@ -10,7 +10,7 @@ pub(crate) type TimerRegisterBlock = swm050::tmrse0::RegisterBlock;
 
 pub struct Timer<TIMER> {
     clocks: Clocks,
-    timer: TIMER,
+    pub(crate) timer: TIMER,
 }
 
 impl<TIMER> Timer<TIMER>
