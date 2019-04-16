@@ -1,8 +1,9 @@
 use core::ops::Deref;
 
-use embedded_hal::timer::{CountDown, Periodic};
+use embedded_hal::timer::{Cancel, CountDown, Periodic};
 use void::Void;
 
+use crate::delay::Delay;
 use crate::syscon::{ClockEnable, Clocks, Syscon};
 use crate::time::Hertz;
 pub(crate) type TimerRegisterBlock = swm050::tmrse0::RegisterBlock;
@@ -80,3 +81,50 @@ where
 }
 
 impl<TIMER> Periodic for Timer<TIMER> where TIMER: Deref<Target = TimerRegisterBlock> {}
+
+/// Implement `CountDown` for `Delay`. This *doesn't* use timer overflow functionality,
+/// it just works with the current tick value. That means, a wait that should be done
+/// could block once again after approx. 120s minimum.
+impl CountDown for Delay {
+    type Time = Hertz;
+
+    fn start<T>(&mut self, timeout: T)
+    where
+        T: Into<Hertz>,
+    {
+        let frequency = timeout.into().0;
+        let ticks = self.scale * 1_000_000 / frequency;
+        self.countdown = Some((ticks, unsafe { (*self.timer).curval.read().bits() }));
+    }
+
+    fn wait(&mut self) -> nb::Result<(), Void> {
+        if let Some((ref ticks, ref start_count)) = self.countdown {
+            if unsafe {
+                (*(self.timer))
+                    .curval
+                    .read()
+                    .bits()
+                    .wrapping_sub(*start_count)
+            } < *ticks
+            {
+                Err(nb::Error::WouldBlock)
+            } else {
+                let ticks = *ticks;
+                // Refresh the start count, so this is periodic
+                self.countdown = Some((ticks, unsafe { (*self.timer).curval.read().bits() }));
+                Ok(())
+            }
+        } else {
+            // The timer wasn't set yet
+            Err(nb::Error::WouldBlock)
+        }
+    }
+}
+
+impl Cancel for Delay {
+    type Error = ();
+    fn cancel(&mut self) -> Result<(), ()> {
+        self.countdown = None;
+        Ok(())
+    }
+}

@@ -15,8 +15,9 @@ use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 
 #[derive(Clone, Copy)]
 pub struct Delay {
-    scale: u32,
-    timer: *const TimerRegisterBlock,
+    pub(crate) scale: u32,
+    pub(crate) timer: *const TimerRegisterBlock,
+    pub(crate) countdown: Option<(u32, u32)>,
 }
 
 // NOTE(unsafe) This only reads
@@ -40,6 +41,7 @@ impl Delay {
         Delay {
             timer: &(*timer),
             scale,
+            countdown: None,
         }
     }
 }
