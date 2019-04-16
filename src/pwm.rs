@@ -4,7 +4,7 @@ use embedded_hal::PwmPin;
 use swm050::{PORT, TMRSE1};
 
 use crate::gpio;
-use crate::gpio::{Output, PushPull};
+use crate::gpio::Output;
 use crate::syscon::{ClockEnable, Syscon};
 use crate::time::Hertz;
 use crate::timers::TimerRegisterBlock;
@@ -15,10 +15,12 @@ pub struct Pwm<TIMER, PIN> {
     ticks: u16,
 }
 
-impl Pwm<TMRSE1, gpio::gpioa::PA_7<Output<PushPull>>> {
+// TODO TMRSE0 isn't supported yet, since it shares pins with swd
+// Not sure how to do this while ensuring that swd isn't accidentally disabled
+impl Pwm<TMRSE1, gpio::gpioa::PA_7<Output>> {
     pub fn new<T>(
         timer: TMRSE1,
-        pin: gpio::gpioa::PA_7<Output<PushPull>>,
+        pin: gpio::gpioa::PA_7<Output>,
         period: T,
         port: &mut PORT,
         syscon: &mut Syscon,
@@ -44,8 +46,8 @@ impl Pwm<TMRSE1, gpio::gpioa::PA_7<Output<PushPull>>> {
         pwm_pin
     }
 }
-impl Pwm<TMRSE1, gpio::gpioa::PA_7<Output<PushPull>>> {
-    pub fn release(self, port: &mut PORT) -> (TMRSE1, gpio::gpioa::PA_7<Output<PushPull>>) {
+impl Pwm<TMRSE1, gpio::gpioa::PA_7<Output>> {
+    pub fn release(self, port: &mut PORT) -> (TMRSE1, gpio::gpioa::PA_7<Output>) {
         port.porta_sel.modify(|_, w| w.pa07().gpio());
         (self.timer, self.pin)
     }

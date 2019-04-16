@@ -40,15 +40,55 @@ pub struct Floating;
 /// Pulled up input (type state)
 pub struct PullUp;
 
-/// Output mode (type state)
-pub struct Output<MODE> {
+/// Output mode
+pub struct Output;
+
+use embedded_hal::digital::{toggleable, InputPin, OutputPin, StatefulOutputPin};
+
+/// Fully erased pin
+pub struct Pin<MODE> {
+    i: u8,
+    port: *const GpioRegExt,
     _mode: PhantomData<MODE>,
 }
 
-/// Push pull output (type state)
-pub struct PushPull;
+// NOTE(unsafe) The only write acess is to BSRR, which is thread safe
+unsafe impl<MODE> Sync for Pin<MODE> {}
+// NOTE(unsafe) this only enables read access to the same pin from multiple
+// threads
+unsafe impl<MODE> Send for Pin<MODE> {}
 
-use embedded_hal::digital::{toggleable, InputPin, OutputPin, StatefulOutputPin};
+impl StatefulOutputPin for Pin<Output> {
+    fn is_set_high(&self) -> bool {
+        !self.is_set_low()
+    }
+
+    fn is_set_low(&self) -> bool {
+        unsafe { (*self.port).is_set_low(self.i) }
+    }
+}
+
+impl OutputPin for Pin<Output> {
+    fn set_high(&mut self) {
+        unsafe { (*self.port).set_high(self.i) }
+    }
+
+    fn set_low(&mut self) {
+        unsafe { (*self.port).set_low(self.i) }
+    }
+}
+
+impl toggleable::Default for Pin<Output> {}
+
+impl<MODE> InputPin for Pin<Input<MODE>> {
+    fn is_high(&self) -> bool {
+        !self.is_low()
+    }
+
+    fn is_low(&self) -> bool {
+        unsafe { (*self.port).is_low(self.i) }
+    }
+}
 
 macro_rules! gpio_trait {
     ($gpiox:ident) => {
@@ -88,7 +128,7 @@ macro_rules! gpio {
 
             use cortex_m::interrupt::CriticalSection;
 
-            use super::{Floating, GpioExt, GpioRegExt, Input, Output, PullUp, PushPull};
+            use super::{Floating, GpioExt, GpioRegExt, Input, Output, PullUp, Pin};
 
             /// GPIO parts
             pub struct Parts {
@@ -139,7 +179,7 @@ macro_rules! gpio {
                     }
 
                     /// Configures the pin to operate as an push pull output pin
-                    pub fn into_push_pull_output(self, _cs: &CriticalSection) -> $PXi<Output<PushPull>> {
+                    pub fn into_push_pull_output(self, _cs: &CriticalSection) -> $PXi<Output> {
                         unsafe {
                             &(*$GPIOX::ptr())
                                 .dir
@@ -149,7 +189,21 @@ macro_rules! gpio {
                     }
                 }
 
-                impl<MODE> StatefulOutputPin for $PXi<Output<MODE>> {
+                impl<MODE> $PXi<MODE> {
+                    /// Erases the pin number from the type
+                    ///
+                    /// This is useful when you want to collect the pins into an array where you
+                    /// need all the elements to have the same type
+                    pub fn downgrade(self) -> Pin<MODE> {
+                        Pin {
+                            i: $i,
+                            port: $GPIOX::ptr() as *const GpioRegExt,
+                            _mode: self._mode,
+                        }
+                    }
+                }
+
+                impl StatefulOutputPin for $PXi<Output> {
                     fn is_set_high(&self) -> bool {
                         !self.is_set_low()
                     }
@@ -159,7 +213,7 @@ macro_rules! gpio {
                     }
                 }
 
-                impl<MODE> OutputPin for $PXi<Output<MODE>> {
+                impl OutputPin for $PXi<Output> {
                     fn set_high(&mut self) {
                         unsafe { (*$GPIOX::ptr()).set_high($i) }
                     }
@@ -169,7 +223,7 @@ macro_rules! gpio {
                     }
                 }
 
-                impl<MODE> toggleable::Default for $PXi<Output<MODE>> {}
+                impl toggleable::Default for $PXi<Output> {}
 
                 impl<MODE> InputPin for $PXi<Input<MODE>> {
                     fn is_high(&self) -> bool {
