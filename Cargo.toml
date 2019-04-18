@@ -5,7 +5,7 @@ authors = ["David Sawatzke <david-sawatzke@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-swm050 = { path = "../swm050" }
+swm050 = { git = "https://github.com/david-sawatzke/swm050-rs" }
 bare-metal = { version = "0.2.4", features = ["const-fn"] }
 cortex-m = "0.6"
 cortex-m-rt = "0.6.7"
