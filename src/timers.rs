@@ -121,6 +121,8 @@ impl CountDown for Delay {
     }
 }
 
+impl Periodic for Delay {}
+
 impl Cancel for Delay {
     type Error = ();
     fn cancel(&mut self) -> Result<(), ()> {
