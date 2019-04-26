@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 swm050 = { git = "https://github.com/david-sawatzke/swm050-rs" }
 bare-metal = { version = "0.2.4", features = ["const-fn"] }
-cortex-m = "0.6"
+cortex-m = ">= 0.5.8, < 0.7"
 cortex-m-rt = "0.6.7"
 nb = "0.1.1"
 void = { version = "1.0.2", default-features = false }
