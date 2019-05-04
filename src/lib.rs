@@ -10,3 +10,4 @@ pub mod pwm;
 pub mod syscon;
 pub mod time;
 pub mod timers;
+pub mod watchdog;
