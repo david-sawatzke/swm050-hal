@@ -29,17 +29,17 @@ fn main() -> ! {
             let mut timer = Timer::timer(p.TMRSE0, Hertz(1), &mut syscon);
             loop {
                 timer.start(Hertz(1));
-                led.set_high();
+                led.set_high().ok();
                 nb::block!(timer.wait()).unwrap();
-                led.set_low();
+                led.set_low().ok();
                 nb::block!(timer.wait()).unwrap();
                 // Do "pwm"
                 timer.start(Hertz(600));
                 for _ in 0..200 {
-                    led.set_high();
+                    led.set_high().ok();
                     nb::block!(timer.wait()).unwrap();
                     nb::block!(timer.wait()).unwrap();
-                    led.set_low();
+                    led.set_low().ok();
                     nb::block!(timer.wait()).unwrap();
                 }
             }

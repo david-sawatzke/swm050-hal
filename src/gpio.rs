@@ -43,12 +43,12 @@ pub struct PullUp;
 /// Output mode
 pub struct Output;
 
-use embedded_hal::digital::{toggleable, InputPin, OutputPin, StatefulOutputPin};
+use embedded_hal::digital::v2::{toggleable, InputPin, OutputPin, StatefulOutputPin};
 
 /// Fully erased pin
 pub struct Pin<MODE> {
     i: u8,
-    port: *const GpioRegExt,
+    port: *const dyn GpioRegExt,
     _mode: PhantomData<MODE>,
 }
 
@@ -59,34 +59,40 @@ unsafe impl<MODE> Sync for Pin<MODE> {}
 unsafe impl<MODE> Send for Pin<MODE> {}
 
 impl StatefulOutputPin for Pin<Output> {
-    fn is_set_high(&self) -> bool {
-        !self.is_set_low()
+    fn is_set_high(&self) -> Result<bool, ()> {
+        self.is_set_low().map(|low| !low)
     }
 
-    fn is_set_low(&self) -> bool {
-        unsafe { (*self.port).is_set_low(self.i) }
+    fn is_set_low(&self) -> Result<bool, ()> {
+        Ok(unsafe { (*self.port).is_set_low(self.i) })
     }
 }
 
 impl OutputPin for Pin<Output> {
-    fn set_high(&mut self) {
-        unsafe { (*self.port).set_high(self.i) }
+    type Error = ();
+
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        unsafe { (*self.port).set_high(self.i) };
+        Ok(())
     }
 
-    fn set_low(&mut self) {
+    fn set_low(&mut self) -> Result<(), Self::Error> {
         unsafe { (*self.port).set_low(self.i) }
+        Ok(())
     }
 }
 
 impl toggleable::Default for Pin<Output> {}
 
 impl<MODE> InputPin for Pin<Input<MODE>> {
-    fn is_high(&self) -> bool {
-        !self.is_low()
+    type Error = ();
+
+    fn is_high(&self) -> Result<bool, ()> {
+        self.is_low().map(|low| !low)
     }
 
-    fn is_low(&self) -> bool {
-        unsafe { (*self.port).is_low(self.i) }
+    fn is_low(&self) -> Result<bool, ()> {
+        Ok(unsafe { (*self.port).is_low(self.i) })
     }
 }
 
@@ -124,7 +130,7 @@ macro_rules! gpio {
             use core::marker::PhantomData;
 
             use crate::swm050::$GPIOX;
-            use embedded_hal::digital::{toggleable, InputPin, OutputPin, StatefulOutputPin};
+            use embedded_hal::digital::v2::{toggleable, InputPin, OutputPin, StatefulOutputPin};
 
             use cortex_m::interrupt::CriticalSection;
 
@@ -197,41 +203,45 @@ macro_rules! gpio {
                     pub fn downgrade(self) -> Pin<MODE> {
                         Pin {
                             i: $i,
-                            port: $GPIOX::ptr() as *const GpioRegExt,
+                            port: $GPIOX::ptr() as *const dyn GpioRegExt,
                             _mode: self._mode,
                         }
                     }
                 }
 
                 impl StatefulOutputPin for $PXi<Output> {
-                    fn is_set_high(&self) -> bool {
-                        !self.is_set_low()
+                    fn is_set_high(&self) -> Result<bool, ()> {
+                        self.is_set_low().map(|low| !low)
                     }
 
-                    fn is_set_low(&self) -> bool {
-                        unsafe { (*$GPIOX::ptr()).is_set_low($i) }
+                    fn is_set_low(&self) -> Result<bool, ()> {
+                        Ok(unsafe { (*$GPIOX::ptr()).is_set_low($i) })
                     }
                 }
 
                 impl OutputPin for $PXi<Output> {
-                    fn set_high(&mut self) {
+                    type Error = ();
+                    fn set_high(&mut self) -> Result<(), ()> {
                         unsafe { (*$GPIOX::ptr()).set_high($i) }
+                        Ok(())
                     }
 
-                    fn set_low(&mut self) {
+                    fn set_low(&mut self) -> Result<(), ()>{
                         unsafe { (*$GPIOX::ptr()).set_low($i) }
+                        Ok(())
                     }
                 }
 
                 impl toggleable::Default for $PXi<Output> {}
 
                 impl<MODE> InputPin for $PXi<Input<MODE>> {
-                    fn is_high(&self) -> bool {
-                        !self.is_low()
+                    type Error = ();
+                    fn is_high(&self) -> Result<bool, ()> {
+                        self.is_low().map(|low| !low)
                     }
 
-                    fn is_low(&self) -> bool {
-                        unsafe { (*$GPIOX::ptr()).is_low($i) }
+                    fn is_low(&self) -> Result<bool, ()> {
+                        Ok(unsafe { (*$GPIOX::ptr()).is_low($i) })
                     }
                 }
             )+

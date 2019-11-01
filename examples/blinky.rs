@@ -23,11 +23,11 @@ fn main() -> ! {
             loop {
                 /* Turn PA5 on a million times in a row */
                 for _ in 0..1_000_000 {
-                    led.set_high();
+                    led.set_high().ok();
                 }
                 /* Then turn PA5 off a million times in a row */
                 for _ in 0..1_000_000 {
-                    led.set_low();
+                    led.set_low().ok();
                 }
             }
         });
